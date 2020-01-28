@@ -36,12 +36,12 @@ def initalize_game():
     bullets = Bullet_List()
     # List of RGB tuples tracks the number of colors in the game currently
     level_colors = COLOR_LEVELS[0]
-    # Player's ship 
+    # Player's ship
     ship = Ship((WIDTH // 2, HEIGHT - 2*HULL_RADIUS), COLOR_LEVELS[0])
     # Tracks the player's score
     score = Score(500)
     #1: Normal Play, 0: Game Over, 3: Paused, 5: Instruction
-    game_state = 1 
+    game_state = 1
     # Levels progresses with player score
     level = 1
     # Briefly displayed at level up
@@ -93,7 +93,7 @@ def update():
         droppers += bubble_grid.drop_loose_bubbles()
         ship.update(delta, keyboard, keys)
         if bubble_grid.collide(ship.x, ship.y, ship.current_radius):
-            game_state = 0 # Game Over
+            restart_level() # Restart Level instead of restarting the game
         score.update(delta)
         if score.is_new_level(): # Triger level change
             next_level()
@@ -106,7 +106,7 @@ def on_mouse_move(pos):
 
 def on_mouse_down(pos, button):
     """
-    PGZero hook procedure. 
+    PGZero hook procedure.
     LMB: Fire Bullet
     RMB: Rush out a new Bubble_Row
     """
@@ -118,7 +118,7 @@ def on_mouse_down(pos, button):
 
 def on_key_down(key):
     """
-    PGZero hook procedure. 
+    PGZero hook procedure.
     SPACE: Cycle Ship's Bullet Color
     P:     Pause/Unpause the game
     R:     Restart the game
@@ -142,7 +142,7 @@ def on_key_down(key):
 
 def next_level():
     """
-    Procedure trigered when player score reaches next_level_points. Sets 
+    Procedure trigered when player score reaches next_level_points. Sets
      conditions for next level.
     """
     global level, bubble_grid, bullets, droppers, new_level_msg, level_colors, \
@@ -155,7 +155,7 @@ def next_level():
     score.next_level_points += 250 * level
 
     new_level_msg = f"Level {level}"
-    
+
     if level == 5:    # Add new color to increase difficulty
         level_colors = COLOR_LEVELS[1]
         new_level_msg += "\nBubble Creation Rate -20%\nNew Color Added!"
@@ -174,6 +174,47 @@ def next_level():
 
     # Schedule New Level Message to disappear in 8 seconds
     clock.schedule(clear_new_level_msg, 8.0)
+
+def restart_level():
+    """
+    Procedure trigered when player score reaches next_level_points. Sets
+     conditions for next level.
+    """
+    global level, bubble_grid, bullets, droppers, new_level_msg, level_colors, \
+           score
+
+    droppers = Dropper_List()
+    bullets = Bullet_List()
+    ship.reset_hull_size()
+    restartPoints = 0
+    for num in range(level-1):
+        if (num == 0):
+            restartPoints += 500
+        else:
+            restartPoints += 250 * (num+1)
+    score.score = restartPoints
+
+    new_level_msg = f"Level {level}"
+
+    if level == 5:    # Add new color to increase difficulty
+        level_colors = COLOR_LEVELS[1]
+        new_level_msg += "\nBubble Creation Rate -20%\nNew Color Added!"
+        ship.set_colors(level_colors)
+        # Slow down bubble grid
+        bubble_grid = Bubble_Grid(level_colors, bubble_grid.velocity)
+    elif level == 10: # Add new color to increase difficulty
+        level_colors = COLOR_LEVELS[2]
+        new_level_msg += "\nBubble Creation Rate -20%\nNew Color Added!"
+        ship.set_colors(level_colors)
+        # Slow down bubble grid
+        bubble_grid = Bubble_Grid(level_colors, bubble_grid.velocity)
+    else: # Speed up bubble creation by 10%
+        new_level_msg += "\nBubble Creation Rate +10%"
+        bubble_grid = Bubble_Grid(level_colors, bubble_grid.velocity)
+
+    # Schedule New Level Message to disappear in 8 seconds
+    clock.schedule(clear_new_level_msg, 8.0)
+
 
 def clear_new_level_msg():
     """
